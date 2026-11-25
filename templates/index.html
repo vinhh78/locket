@@ -169,7 +169,7 @@
                         <!-- Subtle Status Message -->
                         <div id="statusBanner" class="hidden mt-3 p-3 rounded-lg border text-xs flex items-center gap-2.5">
                             <span id="statusIndicator" class="w-1.5 h-1.5 rounded-full shrink-0"></span>
-                            <span id="statusText" class="truncate"></span>
+                            <span id="statusText" class="break-words min-w-0"></span>
                         </div>
                     </div>
                 </section>
@@ -321,7 +321,7 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, password })
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (!res.ok || !data.success) {
                     throw new Error(data.error || "Xác thực thất bại");
                 }
@@ -366,6 +366,59 @@
             }
         });
 
+        async function parseApiResponse(res) {
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch {
+                if (res.status === 413) {
+                    throw new Error("Tệp quá lớn (vượt giới hạn 4.5MB của máy chủ Vercel). Hãy chọn video ngắn/nhẹ hơn.");
+                }
+                if (res.status === 504) {
+                    throw new Error("Máy chủ xử lý quá lâu (timeout). Hãy thử video ngắn hoặc nhẹ hơn.");
+                }
+                throw new Error(`Lỗi máy chủ (${res.status}): ${text.slice(0, 120)}`);
+            }
+        }
+
+        function compressImageIfNeeded(file) {
+            return new Promise((resolve) => {
+                if (file.size <= 3.5 * 1024 * 1024 || !file.type.startsWith("image/")) {
+                    resolve(file);
+                    return;
+                }
+                const img = new Image();
+                const objUrl = URL.createObjectURL(file);
+                img.onload = () => {
+                    URL.revokeObjectURL(objUrl);
+                    const maxDim = 1920;
+                    let { width, height } = img;
+                    if (width > maxDim || height > maxDim) {
+                        const scale = maxDim / Math.max(width, height);
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                    }
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        if (blob && blob.size < file.size) {
+                            resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+                        } else {
+                            resolve(file);
+                        }
+                    }, "image/jpeg", 0.86);
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(objUrl);
+                    resolve(file);
+                };
+                img.src = objUrl;
+            });
+        }
+
         function handleFile(file) {
             const isImg = file.type.startsWith("image/");
             const isVid = file.type.startsWith("video/") || file.name.match(/\.(mp4|mov|m4v|webm)$/i);
@@ -379,7 +432,8 @@
             isVideoFile = isVid;
             emptyPreview.classList.add("hidden");
 
-            const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+            const sizeMbNum = file.size / (1024 * 1024);
+            const sizeMb = sizeMbNum.toFixed(2);
             fileSizeDisplay.textContent = sizeMb + " MB";
 
             const url = URL.createObjectURL(file);
@@ -400,6 +454,10 @@
                     videoDurationLabel.textContent = dur + " giây";
                     videoDurationLabel.classList.remove("hidden");
                 };
+                if (sizeMbNum > 4.4) {
+                    showStatus(`Video nặng ${sizeMb} MB (vượt giới hạn 4.5 MB của Vercel). Hãy nén nhẹ lại trước khi đăng.`, "error");
+                    return;
+                }
             } else {
                 previewVideo.pause();
                 previewVideo.classList.add("hidden");
@@ -440,8 +498,17 @@
             uploadBtn.textContent = "Đang xử lý & tải lên...";
             showStatus("Đang nén và truyền dữ liệu đến máy chủ Locket...", "neutral");
 
+            const fileToUpload = isVideoFile ? selectedFile : await compressImageIfNeeded(selectedFile);
+            if (isVideoFile && fileToUpload.size > 4.4 * 1024 * 1024) {
+                const mb = (fileToUpload.size / (1024 * 1024)).toFixed(2);
+                showStatus(`Video nặng ${mb} MB, vượt giới hạn 4.5 MB của Vercel. Vui lòng nén video nhẹ hơn dưới 4.4 MB.`, "error");
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = "Đăng lên Locket";
+                return;
+            }
+
             const formData = new FormData();
-            formData.append("file", selectedFile);
+            formData.append("file", fileToUpload);
             formData.append("email", currentEmail);
             formData.append("password", currentPassword);
             formData.append("token", currentToken);
@@ -455,7 +522,7 @@
                     method: "POST",
                     body: formData
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (!res.ok || !data.success) {
                     throw new Error(data.error || "Không thể đăng lên Locket");
                 }
@@ -487,7 +554,7 @@
                         local_id: currentLocalId 
                     })
                 });
-                const data = await res.json();
+                const data = await parseApiResponse(res);
                 if (data.success && data.moment) {
                     const latest = Array.isArray(data.moment) ? data.moment[0] : (data.moment.result?.data?.[0] || data.moment);
                     const link = latest?.thumbnail_url || latest?.image_url;
