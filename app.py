@@ -7,8 +7,7 @@ from flask import Flask, request, jsonify, render_template
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from locketlam import LocketClient
-from uploader import LocketUploader
+from uploader import LocketUploader, create_locket_client, cleanup_file
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
@@ -19,6 +18,7 @@ def index():
 
 @app.route("/api/login", methods=["POST"])
 def login():
+    session_path = None
     try:
         data = request.get_json() or {}
         email = data.get("email", "").strip()
@@ -27,7 +27,7 @@ def login():
         if not email or not password:
             return jsonify({"success": False, "error": "Vui lòng nhập đầy đủ Email và Mật khẩu"}), 400
 
-        client = LocketClient(auto_emulate=True)
+        client, session_path = create_locket_client()
         client.login(email, password)
 
         return jsonify({
@@ -38,9 +38,12 @@ def login():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
+    finally:
+        cleanup_file(session_path)
 
 @app.route("/api/last-moment", methods=["POST"])
 def get_last_moment():
+    session_path = None
     try:
         data = request.get_json() or {}
         email = data.get("email")
@@ -48,7 +51,7 @@ def get_last_moment():
         token = data.get("token")
         local_id = data.get("local_id")
 
-        client = LocketClient(auto_emulate=True)
+        client, session_path = create_locket_client()
         if email and password:
             client.login(email, password)
         elif token:
@@ -60,6 +63,8 @@ def get_last_moment():
         return jsonify({"success": True, "moment": moments})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
+    finally:
+        cleanup_file(session_path)
 
 @app.route("/api/upload", methods=["POST"])
 def upload_moment():

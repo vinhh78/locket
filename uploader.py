@@ -3,11 +3,28 @@
 
 import tempfile
 import os
+import uuid
 from locketlam import LocketClient
+
+
+def create_locket_client():
+    """Create a LocketClient using an isolated writable temp session path."""
+    session_path = os.path.join(tempfile.gettempdir(), f"locket_session_{uuid.uuid4().hex}.json")
+    return LocketClient(session_path=session_path, auto_emulate=True), session_path
+
+
+def cleanup_file(path):
+    """Remove a temporary file if it exists."""
+    if path and os.path.exists(path):
+        try:
+            os.remove(path)
+        except Exception:
+            pass
+
 
 class LocketUploader:
     def __init__(self, email=None, password=None, token=None, local_id=None):
-        self.client = LocketClient(auto_emulate=True)
+        self.client, self.session_path = create_locket_client()
         if email and password:
             self.client.login(email, password)
         elif token:
@@ -40,8 +57,5 @@ class LocketUploader:
                 "data": res
             }
         finally:
-            if temp_video_path and os.path.exists(temp_video_path):
-                try:
-                    os.remove(temp_video_path)
-                except Exception:
-                    pass
+            cleanup_file(temp_video_path)
+            cleanup_file(self.session_path)
