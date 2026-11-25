@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+locketlam_session.json
+my_moments_*.json
+.env
+.DS_Store
+.agents/
+__init__.py
+api.py

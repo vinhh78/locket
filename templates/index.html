@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dembevinh — Locket Uploader</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'monospace']
+                    },
+                    colors: {
+                        dark: {
+                            base: '#0c0c0e',
+                            surface: '#141417',
+                            overlay: '#1b1b20',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            borderSubtle: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        amber: {
+                            brand: '#d97706',
+                            brandHover: '#b45309',
+                            brandText: '#f59e0b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons for crisp line UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            background-color: #0c0c0e;
+            color: #f4f4f5;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        }
+
+        /* Viewfinder frame marks */
+        .reticle-tl { top: 12px; left: 12px; border-top: 1.5px solid rgba(255,255,255,0.3); border-left: 1.5px solid rgba(255,255,255,0.3); }
+        .reticle-tr { top: 12px; right: 12px; border-top: 1.5px solid rgba(255,255,255,0.3); border-right: 1.5px solid rgba(255,255,255,0.3); }
+        .reticle-bl { bottom: 12px; left: 12px; border-bottom: 1.5px solid rgba(255,255,255,0.3); border-left: 1.5px solid rgba(255,255,255,0.3); }
+        .reticle-br { bottom: 12px; right: 12px; border-bottom: 1.5px solid rgba(255,255,255,0.3); border-right: 1.5px solid rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-amber-900/40 selection:text-amber-200">
+
+    <!-- Top Navigation Bar -->
+    <header class="w-full border-b border-dark-border bg-dark-base/90 sticky top-0 z-20 backdrop-blur-sm">
+        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span class="text-sm font-semibold tracking-tight text-zinc-100">dembevinh</span>
+                <span class="text-xs text-zinc-500 font-mono">/ locket</span>
+            </div>
+            
+            <div class="flex items-center gap-4 text-xs">
+                <div id="navSessionStatus" class="flex items-center gap-2 text-zinc-400">
+                    <span id="navDot" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                    <span id="navStatusText">Chưa kết nối</span>
+                </div>
+                <button type="button" id="checkLatestBtn" class="h-8 px-3 rounded-lg border border-dark-border bg-dark-surface hover:bg-dark-overlay text-zinc-300 transition-colors">
+                    Xem bài gần nhất
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-5xl mx-auto w-full px-6 py-10 flex-1">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- Left Column: Controls & Form (7 Cols) -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+
+                <!-- Account Module -->
+                <section class="p-6 rounded-2xl border border-dark-border bg-dark-surface">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Tài khoản Locket</h2>
+                        <span id="accountStateBadge" class="text-xs text-zinc-500 font-mono">Xác thực Firebase</span>
+                    </div>
+
+                    <!-- Logged Out Form -->
+                    <form id="loginForm" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5 font-medium">Email</label>
+                                <input type="email" id="emailInput" required placeholder="name@example.com"
+                                    class="w-full h-10 px-3.5 rounded-lg border border-dark-border bg-dark-base text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-500/70 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5 font-medium">Mật khẩu</label>
+                                <input type="password" id="passwordInput" required placeholder="••••••••"
+                                    class="w-full h-10 px-3.5 rounded-lg border border-dark-border bg-dark-base text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-500/70 transition-colors">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button type="submit" id="loginBtn" class="h-9 px-4 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 text-xs font-semibold transition-colors flex items-center gap-2 active:scale-[0.98]">
+                                Kết nối tài khoản
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Logged In State -->
+                    <div id="loggedInView" class="hidden flex items-center justify-between pt-1">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-dark-overlay border border-dark-border flex items-center justify-center text-xs text-amber-brandText">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-medium text-zinc-200" id="userEmailDisplay">user@example.com</div>
+                                <div class="text-[11px] font-mono text-zinc-500" id="userIdDisplay">UID: ...</div>
+                            </div>
+                        </div>
+                        <button type="button" id="logoutBtn" class="h-7 px-2.5 rounded-md text-xs text-zinc-400 hover:text-zinc-200 hover:bg-dark-overlay transition-colors">
+                            Ngắt kết nối
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Media Upload Panel -->
+                <section class="p-6 rounded-2xl border border-dark-border bg-dark-surface flex flex-col gap-5">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Tệp tin & Nội dung</h2>
+                        <span id="fileTypeBadge" class="text-xs font-mono text-zinc-500">Chưa chọn</span>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div id="dropzone" class="border border-dashed border-dark-border hover:border-zinc-500 bg-dark-base/50 hover:bg-dark-base/80 rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] group">
+                        <input type="file" id="fileInput" accept="image/*,video/mp4,video/quicktime,video/webm" class="hidden">
+                        <div class="w-10 h-10 rounded-full border border-dark-border bg-dark-surface text-zinc-400 group-hover:text-zinc-200 flex items-center justify-center text-sm mb-3 transition-colors">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                        </div>
+                        <p class="text-xs text-zinc-300 font-medium mb-1">Kéo thả ảnh hoặc video vào đây</p>
+                        <p class="text-[11px] text-zinc-500">Hỗ trợ JPG, PNG, WEBP hoặc video MP4, MOV đến 30 giây</p>
+                    </div>
+
+                    <!-- Form Controls -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5 font-medium">Lời nhắn kèm theo</label>
+                            <input type="text" id="captionInput" placeholder="Viết chú thích ngắn..."
+                                class="w-full h-10 px-3.5 rounded-lg border border-dark-border bg-dark-base text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-500/70 transition-colors">
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <label class="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer select-none">
+                                <input type="checkbox" id="sentToAllInput" checked class="w-3.5 h-3.5 rounded border-dark-border bg-dark-base text-amber-500 focus:ring-0 focus:ring-offset-0">
+                                <span>Gửi đến toàn bộ bạn bè</span>
+                            </label>
+                            <span id="videoDurationLabel" class="hidden text-[11px] font-mono text-zinc-500"></span>
+                        </div>
+                    </div>
+
+                    <!-- Publish Button -->
+                    <div class="pt-2">
+                        <button type="button" id="uploadBtn" class="w-full h-11 rounded-lg bg-amber-brand hover:bg-amber-brandHover text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2 active:scale-[0.99]">
+                            <span>Đăng lên Locket</span>
+                        </button>
+
+                        <!-- Subtle Status Message -->
+                        <div id="statusBanner" class="hidden mt-3 p-3 rounded-lg border text-xs flex items-center gap-2.5">
+                            <span id="statusIndicator" class="w-1.5 h-1.5 rounded-full shrink-0"></span>
+                            <span id="statusText" class="truncate"></span>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Right Column: Viewfinder Widget Preview (5 Cols) -->
+            <div class="lg:col-span-5 flex flex-col items-center">
+                <div class="w-full max-w-[340px] p-4 rounded-2xl border border-dark-border bg-dark-surface flex flex-col items-center">
+                    <div class="w-full flex items-center justify-between mb-3 text-[11px] font-mono text-zinc-500">
+                        <span>VIEWFINDER 1:1</span>
+                        <span id="mediaSpecText">STANDBY</span>
+                    </div>
+
+                    <!-- Viewfinder Frame -->
+                    <div class="w-full aspect-square rounded-2xl bg-black border border-white/10 relative overflow-hidden flex items-center justify-center">
+                        
+                        <!-- Visual Reticle Marks -->
+                        <span class="absolute w-3 h-3 reticle-tl pointer-events-none z-10"></span>
+                        <span class="absolute w-3 h-3 reticle-tr pointer-events-none z-10"></span>
+                        <span class="absolute w-3 h-3 reticle-bl pointer-events-none z-10"></span>
+                        <span class="absolute w-3 h-3 reticle-br pointer-events-none z-10"></span>
+
+                        <!-- Image Preview -->
+                        <img id="previewImage" src="" alt="Preview" class="hidden w-full h-full object-cover">
+
+                        <!-- Video Preview -->
+                        <video id="previewVideo" autoplay loop muted playsinline class="hidden w-full h-full object-cover"></video>
+
+                        <!-- Standby Empty View -->
+                        <div id="emptyPreview" class="text-center p-6 text-zinc-600 flex flex-col items-center gap-2">
+                            <div class="w-8 h-8 rounded-full border border-zinc-800 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-camera"></i>
+                            </div>
+                            <span class="text-xs font-mono text-zinc-600">Khung ngắm trống</span>
+                        </div>
+
+                        <!-- Caption Overlay (Standard Locket Badge) -->
+                        <div id="captionOverlay" class="hidden absolute bottom-4 px-3 py-1 rounded-full bg-black/75 backdrop-blur-sm text-[11px] text-zinc-100 max-w-[85%] truncate border border-white/10 shadow-sm z-10">
+                        </div>
+                    </div>
+
+                    <div class="w-full mt-3 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+                        <span>LOCKET WIDGET</span>
+                        <span id="fileSizeDisplay">-- KB</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-dark-border py-6 text-xs text-zinc-500">
+        <div class="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>Thiết kế bởi dembevinh</span>
+            <span>Bản quyền © 2026 dembevinh. Mọi quyền được bảo lưu.</span>
+        </div>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        let currentToken = localStorage.getItem("dembevinh_token") || "";
+        let currentLocalId = localStorage.getItem("dembevinh_local_id") || "";
+        let currentEmail = localStorage.getItem("dembevinh_email") || "";
+        let currentPassword = localStorage.getItem("dembevinh_password") || "";
+        
+        let selectedFile = null;
+        let isVideoFile = false;
+
+        const loginForm = document.getElementById("loginForm");
+        const loggedInView = document.getElementById("loggedInView");
+        const accountStateBadge = document.getElementById("accountStateBadge");
+        const userEmailDisplay = document.getElementById("userEmailDisplay");
+        const userIdDisplay = document.getElementById("userIdDisplay");
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        const navSessionStatus = document.getElementById("navSessionStatus");
+        const navDot = document.getElementById("navDot");
+        const navStatusText = document.getElementById("navStatusText");
+
+        const dropzone = document.getElementById("dropzone");
+        const fileInput = document.getElementById("fileInput");
+        const previewImage = document.getElementById("previewImage");
+        const previewVideo = document.getElementById("previewVideo");
+        const emptyPreview = document.getElementById("emptyPreview");
+        const mediaSpecText = document.getElementById("mediaSpecText");
+        const fileSizeDisplay = document.getElementById("fileSizeDisplay");
+        const fileTypeBadge = document.getElementById("fileTypeBadge");
+        const videoDurationLabel = document.getElementById("videoDurationLabel");
+
+        const captionInput = document.getElementById("captionInput");
+        const captionOverlay = document.getElementById("captionOverlay");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const statusBanner = document.getElementById("statusBanner");
+        const statusIndicator = document.getElementById("statusIndicator");
+        const statusText = document.getElementById("statusText");
+        const checkLatestBtn = document.getElementById("checkLatestBtn");
+
+        function updateLoginState() {
+            if ((currentEmail && currentPassword) || (currentToken && currentLocalId)) {
+                loginForm.classList.add("hidden");
+                loggedInView.classList.remove("hidden");
+                accountStateBadge.textContent = "Đã xác thực";
+                accountStateBadge.className = "text-xs text-emerald-400 font-mono";
+                userEmailDisplay.textContent = currentEmail || "Tài khoản Locket";
+                userIdDisplay.textContent = currentLocalId ? "UID: " + currentLocalId.slice(0, 10) + "..." : "Sẵn sàng";
+                
+                navDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+                navStatusText.textContent = "Trực tuyến";
+            } else {
+                loginForm.classList.remove("hidden");
+                loggedInView.classList.add("hidden");
+                accountStateBadge.textContent = "Chưa đăng nhập";
+                accountStateBadge.className = "text-xs text-zinc-500 font-mono";
+                
+                navDot.className = "w-1.5 h-1.5 rounded-full bg-zinc-600";
+                navStatusText.textContent = "Chưa kết nối";
+            }
+        }
+        updateLoginState();
+
+        logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("dembevinh_token");
+            localStorage.removeItem("dembevinh_local_id");
+            localStorage.removeItem("dembevinh_email");
+            localStorage.removeItem("dembevinh_password");
+            currentToken = "";
+            currentLocalId = "";
+            currentEmail = "";
+            currentPassword = "";
+            updateLoginState();
+            showStatus("Đã ngắt kết nối tài khoản", "neutral");
+        });
+
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("emailInput").value.trim();
+            const password = document.getElementById("passwordInput").value;
+            const loginBtn = document.getElementById("loginBtn");
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = "Đang xác thực...";
+            showStatus("Đang kiểm tra thông tin với máy chủ Locket...", "neutral");
+
+            try {
+                const res = await fetch("/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || "Xác thực thất bại");
+                }
+
+                currentToken = data.token;
+                currentLocalId = data.local_id;
+                currentEmail = data.email;
+                currentPassword = password;
+                localStorage.setItem("dembevinh_token", currentToken);
+                localStorage.setItem("dembevinh_local_id", currentLocalId);
+                localStorage.setItem("dembevinh_email", currentEmail);
+                localStorage.setItem("dembevinh_password", currentPassword);
+
+                updateLoginState();
+                showStatus("Kết nối tài khoản thành công", "success");
+            } catch (err) {
+                showStatus(err.message, "error");
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = "Kết nối tài khoản";
+            }
+        });
+
+        dropzone.addEventListener("click", () => fileInput.click());
+        dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropzone.classList.add("border-zinc-400", "bg-dark-base");
+        });
+        dropzone.addEventListener("dragleave", () => {
+            dropzone.classList.remove("border-zinc-400", "bg-dark-base");
+        });
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("border-zinc-400", "bg-dark-base");
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            const isImg = file.type.startsWith("image/");
+            const isVid = file.type.startsWith("video/") || file.name.match(/\.(mp4|mov|m4v|webm)$/i);
+
+            if (!isImg && !isVid) {
+                showStatus("Định dạng tệp không được hỗ trợ", "error");
+                return;
+            }
+
+            selectedFile = file;
+            isVideoFile = isVid;
+            emptyPreview.classList.add("hidden");
+
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+            fileSizeDisplay.textContent = sizeMb + " MB";
+
+            const url = URL.createObjectURL(file);
+
+            if (isVid) {
+                previewImage.classList.add("hidden");
+                previewVideo.src = url;
+                previewVideo.classList.remove("hidden");
+                previewVideo.play().catch(() => {});
+
+                fileTypeBadge.textContent = "Video (" + sizeMb + " MB)";
+                mediaSpecText.textContent = "VIDEO 1:1";
+
+                const tempVideo = document.createElement("video");
+                tempVideo.src = url;
+                tempVideo.onloadedmetadata = () => {
+                    const dur = Math.round(tempVideo.duration || 0);
+                    videoDurationLabel.textContent = dur + " giây";
+                    videoDurationLabel.classList.remove("hidden");
+                };
+            } else {
+                previewVideo.pause();
+                previewVideo.classList.add("hidden");
+                videoDurationLabel.classList.add("hidden");
+
+                previewImage.src = url;
+                previewImage.classList.remove("hidden");
+
+                fileTypeBadge.textContent = "Hình ảnh (" + sizeMb + " MB)";
+                mediaSpecText.textContent = "PHOTO 1:1";
+            }
+            showStatus("Đã chọn: " + file.name, "neutral");
+        }
+
+        captionInput.addEventListener("input", (e) => {
+            const val = e.target.value.trim();
+            if (val) {
+                captionOverlay.textContent = val;
+                captionOverlay.classList.remove("hidden");
+            } else {
+                captionOverlay.classList.add("hidden");
+            }
+        });
+
+        uploadBtn.addEventListener("click", async () => {
+            if (!currentEmail && !currentToken) {
+                showStatus("Vui lòng kết nối tài khoản Locket trước", "error");
+                document.getElementById("emailInput").focus();
+                return;
+            }
+            if (!selectedFile) {
+                showStatus("Vui lòng chọn ảnh hoặc video trước khi đăng", "error");
+                fileInput.click();
+                return;
+            }
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = "Đang xử lý & tải lên...";
+            showStatus("Đang nén và truyền dữ liệu đến máy chủ Locket...", "neutral");
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+            formData.append("email", currentEmail);
+            formData.append("password", currentPassword);
+            formData.append("token", currentToken);
+            formData.append("local_id", currentLocalId);
+            formData.append("caption", captionInput.value.trim());
+            formData.append("media_type", isVideoFile ? "video" : "image");
+            formData.append("sent_to_all", document.getElementById("sentToAllInput").checked);
+
+            try {
+                const res = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || "Không thể đăng lên Locket");
+                }
+
+                showStatus("Đăng bài thành công lên widget Locket", "success");
+            } catch (err) {
+                showStatus(err.message, "error");
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = "Đăng lên Locket";
+            }
+        });
+
+        checkLatestBtn.addEventListener("click", async () => {
+            if (!currentEmail && !currentToken) {
+                showStatus("Cần kết nối tài khoản để xem bài đăng", "error");
+                return;
+            }
+            checkLatestBtn.disabled = true;
+            checkLatestBtn.textContent = "Đang tải...";
+            try {
+                const res = await fetch("/api/last-moment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        email: currentEmail, 
+                        password: currentPassword,
+                        token: currentToken, 
+                        local_id: currentLocalId 
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.moment) {
+                    const latest = Array.isArray(data.moment) ? data.moment[0] : (data.moment.result?.data?.[0] || data.moment);
+                    const link = latest?.thumbnail_url || latest?.image_url;
+                    if (link) {
+                        window.open(link, "_blank");
+                        showStatus("Đã mở bài đăng mới nhất", "success");
+                    } else {
+                        showStatus("Không tìm thấy đường dẫn ảnh", "neutral");
+                    }
+                } else {
+                    showStatus("Không có bài đăng gần đây", "neutral");
+                }
+            } catch (err) {
+                showStatus("Lỗi khi tải bài đăng: " + err.message, "error");
+            } finally {
+                checkLatestBtn.disabled = false;
+                checkLatestBtn.textContent = "Xem bài gần nhất";
+            }
+        });
+
+        function showStatus(msg, type) {
+            statusBanner.classList.remove("hidden", "border-emerald-500/30", "bg-emerald-950/20", "text-emerald-300",
+                                          "border-red-500/30", "bg-red-950/20", "text-red-300",
+                                          "border-dark-border", "bg-dark-base", "text-zinc-300");
+            
+            if (type === "success") {
+                statusBanner.classList.add("border-emerald-500/30", "bg-emerald-950/20", "text-emerald-300");
+                statusIndicator.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+            } else if (type === "error") {
+                statusBanner.classList.add("border-red-500/30", "bg-red-950/20", "text-red-300");
+                statusIndicator.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+            } else {
+                statusBanner.classList.add("border-dark-border", "bg-dark-base", "text-zinc-300");
+                statusIndicator.className = "w-1.5 h-1.5 rounded-full bg-zinc-400";
+            }
+            statusText.textContent = msg;
+        }
+    </script>
+</body>
+</html>
