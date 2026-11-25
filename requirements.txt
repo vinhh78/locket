@@ -3,3 +3,4 @@ pillow>=10.0.0
 requests>=2.31.0
 locketlam>=1.0.2
 imageio-ffmpeg>=0.4.8
+gunicorn>=21.2.0

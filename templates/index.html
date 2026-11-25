@@ -372,10 +372,10 @@
                 return JSON.parse(text);
             } catch {
                 if (res.status === 413) {
-                    throw new Error("Tệp quá lớn (vượt giới hạn 4.5MB của máy chủ Vercel). Hãy chọn video ngắn/nhẹ hơn.");
+                    throw new Error("Tệp quá lớn (vượt giới hạn 100MB). Hãy chọn video nhẹ hơn.");
                 }
                 if (res.status === 504) {
-                    throw new Error("Máy chủ xử lý quá lâu (timeout). Hãy thử video ngắn hoặc nhẹ hơn.");
+                    throw new Error("Máy chủ xử lý quá lâu (timeout). Hãy thử video ngắn hơn.");
                 }
                 throw new Error(`Lỗi máy chủ (${res.status}): ${text.slice(0, 120)}`);
             }
@@ -454,8 +454,8 @@
                     videoDurationLabel.textContent = dur + " giây";
                     videoDurationLabel.classList.remove("hidden");
                 };
-                if (sizeMbNum > 4.4) {
-                    showStatus(`Video nặng ${sizeMb} MB (vượt giới hạn 4.5 MB của Vercel). Hãy nén nhẹ lại trước khi đăng.`, "error");
+                if (sizeMbNum > 100) {
+                    showStatus(`Video nặng ${sizeMb} MB (vượt giới hạn 100 MB). Hãy chọn video nhẹ hơn.`, "error");
                     return;
                 }
             } else {
@@ -499,9 +499,9 @@
             showStatus("Đang nén và truyền dữ liệu đến máy chủ Locket...", "neutral");
 
             const fileToUpload = isVideoFile ? selectedFile : await compressImageIfNeeded(selectedFile);
-            if (isVideoFile && fileToUpload.size > 4.4 * 1024 * 1024) {
+            if (isVideoFile && fileToUpload.size > 100 * 1024 * 1024) {
                 const mb = (fileToUpload.size / (1024 * 1024)).toFixed(2);
-                showStatus(`Video nặng ${mb} MB, vượt giới hạn 4.5 MB của Vercel. Vui lòng nén video nhẹ hơn dưới 4.4 MB.`, "error");
+                showStatus(`Video nặng ${mb} MB, vượt giới hạn 100 MB.`, "error");
                 uploadBtn.disabled = false;
                 uploadBtn.textContent = "Đăng lên Locket";
                 return;
